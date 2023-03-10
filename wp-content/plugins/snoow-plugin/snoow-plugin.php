@@ -32,13 +32,17 @@ Text Domain: snoow-plugin
 
     copyright (c) 2023 snoow plugin
 */
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 
-if ( ! function_exists( 'add_action' ) ) {
-    echo 'Hi there!  I\'m just a plugin, not much I can do when called directly.';
-    exit;
+class SnoowPlugin{
+    //methods
+    function __construct(){
+        add_action( 'init', array( $this, 'custom_post_type' ) );
+    }
+
+}
+
+if( class_exists( 'SnoowPlugin' ) ){
+    $snoowPlugin = new SnoowPlugin();
 }
 

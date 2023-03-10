@@ -33,3 +33,11 @@ Text Domain: snoow-plugin
     copyright (c) 2023 snoow plugin
 */
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
+
+class SnoowPlugin {
+    //methods
+}
+
+if ( class_exists( 'SnoowPlugin' ) ) {
+    $snoowPlugin = new SnoowPlugin();
+}

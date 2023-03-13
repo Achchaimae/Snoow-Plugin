@@ -32,12 +32,110 @@ Text Domain: snoow-plugin
 
     copyright (c) 2023 snoow plugin
 */
-defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 
-class SnoowPlugin {
-    //methods
+// Define the feedback form shortcode
+function feedback_form_shortcode() {
+    ob_start();
+    ?>
+    <form method="post" action="" style="display:flex; flex-direction: column; justify-items:center; background-color: rgb(187 247 208); padding:2rem ;">
+        <label for="note">Note (obligatoire):</label>
+        <input type="number" name="note" min="0" max="5" required  style="border-radius: 0.25rem; padding:1rem ; " >
+        <br><br>
+        <label for="remarque">Remarque (obligatoire):</label>
+        <textarea name="remarque" rows="5" required style="border-radius: 0.25rem; padding:1rem ; "></textarea>
+        <br><br>
+        <label for="post_id">ID de post ou de page (obligatoire):</label>
+        <input type="text" name="post_id" required style="border-radius: 0.25rem; padding:1rem ; ">
+        <br><br>
+        <input type="submit" name="submit_feedback" value="Envoyer" style="border-radius: 0.25rem; padding:1rem ; ">
+    </form>
+    <?php
+    return ob_get_clean();
 }
+add_shortcode( 'feedback_form', 'feedback_form_shortcode' );
 
-if ( class_exists( 'SnoowPlugin' ) ) {
-    $snoowPlugin = new SnoowPlugin();
+// Save feedback data to the database
+function save_feedback() {
+    if ( isset( $_POST['submit_feedback'] ) ) {
+        global $wpdb;
+        $snoow_feedback = $wpdb->prefix . 'feedback_data';
+        $note = sanitize_text_field( $_POST['note'] );
+        $remarque = sanitize_textarea_field( $_POST['remarque'] );
+        $post_id = sanitize_text_field( $_POST['post_id'] );
+        $wpdb->insert(
+            $snoow_feedback,
+            array(
+                'note' => $note,
+                'remarque' => $remarque,
+                'post_id' => $post_id
+            ),
+            array(
+                '%d',
+                '%s',
+                '%s'
+            )
+        );
+    }
+}
+add_action( 'init', 'save_feedback' );
+
+// Create the feedback data table in the database on plugin activation
+function create_feedback_table() {
+    global $wpdb;
+    $snoow_feedback = $wpdb->prefix . 'feedback_data';
+    $charset_collate = $wpdb->get_charset_collate();
+    $sql = "CREATE TABLE $snoow_feedback (
+        id int(11) NOT NULL AUTO_INCREMENT,
+        note int(1) NOT NULL,
+        remarque text NOT NULL,
+        post_id varchar(255) NOT NULL,
+        PRIMARY KEY (id)
+    ) $charset_collate;";
+    require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+    dbDelta( $sql );
+}
+register_activation_hook( __FILE__, 'create_feedback_table' );
+
+// Add an admin menu item for the feedback data
+function feedback_menu_item() {
+    add_menu_page(
+        'Feedback Data',
+        'Feedback Data',
+        'manage_options',
+        'feedback-data',
+        'feedback_data_page'
+    );
+}
+add_action( 'admin_menu', 'feedback_menu_item' );
+
+// Create the feedback data page in the admin panel
+function feedback_data_page() {
+    global $wpdb;
+    $snoow_feedback = $wpdb->prefix . 'feedback_data';
+    $feedback_data = $wpdb->get_results( "SELECT * FROM $snoow_feedback" );
+    ?>
+    <div class="wrap">
+        <h1>Feedback Data</h1>
+        <table class="widefat" >
+            <thead style="background-color: rgb(147 197 253); font-weight: bold; ">
+                <tr>
+                    <th>ID</th>
+                    <th  >    Note</th>
+                    <th>Remarque</th>
+                    <th>Post ID</th>
+            </tr>
+        </thead>
+        <tbody style="background-color: rgb(219 234 254);">
+            <?php foreach ( $feedback_data as $feedback ) : ?>
+                <tr>
+                    <td><?php echo $feedback->id; ?></td>
+                    <td><?php echo $feedback->note; ?></td>
+                    <td><?php echo $feedback->remarque; ?></td>
+                    <td><?php echo $feedback->post_id; ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php
 }
